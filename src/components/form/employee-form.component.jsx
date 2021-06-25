@@ -18,16 +18,24 @@ const useStyles = makeStyles(theme => ({
     flexDirection: "column",
     alignItems: "center"
   },
+  container: {
+    padding: theme.spacing(0),
+    display: "flex",
+    flexDirection: "column",
+    justifyContent: "center",
+    alignItems: "center",
+    gap: "2rem"
+  },
   schedule: {
-    margin: theme.spacing(1),
+    margin: theme.spacing(0),
     fontSize: "4rem"
   },
   form: {
     width: "100%", // Fix IE 11 issue.
-    marginTop: theme.spacing(1),
+    marginTop: theme.spacing(0),
     display: "flex",
     flexDirection: "column",
-    gap: "1rem"
+    gap: theme.spacing(3)
   },
   submit: {
     margin: theme.spacing(3, 0, 2)
@@ -65,70 +73,72 @@ export default function EmployeeForm() {
   };
 
   return (
-    <Container component="main" maxWidth="xs">
+    <Container component="main" fluid maxWidth="xs">
       <CssBaseline />
       <div className={classes.paper}>
-        <ScheduleIcon className={classes.schedule}></ScheduleIcon>
-        <Typography component="h1" variant="h5">
-          SUBMIT YOUR HOURS
-        </Typography>
-        <form
-          className={classes.form}
-          noValidate
-          onSubmit={e => {
-            e.preventDefault();
-            console.log(employee, period, hours);
-            resetInitialState();
-          }}
-        >
-          <TextField
-            fullWidth
-            variant="outlined"
-            required
-            name="employee"
-            select
-            label="Employee Name"
-            onChange={handleChange}
-            value={employee}
+        <Container className={classes.container}>
+          <ScheduleIcon className={classes.schedule}></ScheduleIcon>
+          <Typography component="h2" variant="h6">
+            SUBMIT YOUR HOURS
+          </Typography>
+          <form
+            className={classes.form}
+            noValidate
+            onSubmit={e => {
+              e.preventDefault();
+              console.log(employee, period, hours);
+              resetInitialState();
+            }}
           >
-            <MenuItem value={"Salam Al-Jajika"}>Salam Al-jajika</MenuItem>
-            <MenuItem value={"Fouad A Shamoon"}>Fouad A Shamoon</MenuItem>
-          </TextField>
-          <TextField
-            fullWidth
-            variant="outlined"
-            label="Pay Period"
-            name="period"
-            select
-            inputProps={{ autoComplete: "none" }}
-            required
-            onChange={handleChange}
-            value={period}
-          >
-            <MenuItem value="1">Jun 19, 2021 to Jul 2, 2021</MenuItem>
-            <MenuItem value="2">Jul 3, 2021 to Jul 16, 2021</MenuItem>
-          </TextField>
-          <TextField
-            fullWidth
-            variant="outlined"
-            required
-            name="hours"
-            label="Hours"
-            type="number"
-            autoComplete="off"
-            onChange={handleChange}
-            value={hours}
-          />
-          <Button
-            type="submit"
-            fullWidth
-            variant="contained"
-            color="primary"
-            className={classes.submit}
-            children="Submit"
-            endIcon={<TelegramIcon />}
-          />
-        </form>
+            <TextField
+              fullWidth
+              variant="outlined"
+              required
+              name="employee"
+              select
+              label="Employee Name"
+              onChange={handleChange}
+              value={employee}
+            >
+              <MenuItem value={"Salam Al-Jajika"}>Salam Al-jajika</MenuItem>
+              <MenuItem value={"Fouad A Shamoon"}>Fouad A Shamoon</MenuItem>
+            </TextField>
+            <TextField
+              fullWidth
+              variant="outlined"
+              label="Pay Period"
+              name="period"
+              select
+              inputProps={{ autoComplete: "none" }}
+              required
+              onChange={handleChange}
+              value={period}
+            >
+              <MenuItem value="1">Jun 19, 2021 to Jul 2, 2021</MenuItem>
+              <MenuItem value="2">Jul 3, 2021 to Jul 16, 2021</MenuItem>
+            </TextField>
+            <TextField
+              fullWidth
+              variant="outlined"
+              required
+              name="hours"
+              label="Hours"
+              type="number"
+              autoComplete="off"
+              onChange={handleChange}
+              value={hours}
+            />
+            <Button
+              type="submit"
+              fullWidth
+              variant="contained"
+              color="primary"
+              className={classes.submit}
+              children="Submit"
+              endIcon={<TelegramIcon />}
+            />
+          </form>
+        </Container>
       </div>
     </Container>
   );
