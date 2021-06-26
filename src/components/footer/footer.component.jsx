@@ -20,12 +20,16 @@ function Copyright() {
 const useStyles = makeStyles(theme => ({
   root: {
     display: "flex",
-    flexDirection: "column"
+    flexDirection: "column",
+    position: "relative",
+    paddingBottom: theme.spacing(15)
   },
   footer: {
     width: "100%",
     padding: theme.spacing(3, 2),
-    marginTop: theme.spacing(5)
+    marginTop: theme.spacing(5),
+    position: "absolute",
+    bottom: 0
   }
 }));
 
