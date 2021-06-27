@@ -47,6 +47,9 @@ export default function EmployeeForm() {
   const [period, setPeriod] = useState("");
   const [hours, setHours] = useState("");
   const [employee, setEmployee] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState(false);
 
   const resetInitialState = () => {
     setEmployee("");
@@ -72,8 +75,37 @@ export default function EmployeeForm() {
     }
   };
 
+  const handleSubmit = async e => {
+    e.preventDefault();
+    setIsLoading(true);
+    setError("");
+
+    const endpoit =
+      "https://enoccmh976.execute-api.ca-central-1.amazonaws.com/default/hhpm";
+    const body = JSON.stringify({
+      employee,
+      period,
+      hours
+    });
+
+    const requestOptions = {
+      method: "POST",
+      body
+    };
+
+    try {
+      const response = await fetch(endpoit, requestOptions);
+      if (!response.ok) throw new Error("Error in fetch request");
+      setSuccess(true);
+    } catch (error) {
+      setError("An unknown error occured");
+    }
+    setIsLoading(false);
+    resetInitialState();
+  };
+
   return (
-    <Container component="main" fluid maxWidth="xs">
+    <Container component="main" maxWidth="xs">
       <CssBaseline />
       <div className={classes.paper}>
         <Container className={classes.container}>
@@ -84,12 +116,14 @@ export default function EmployeeForm() {
           <form
             className={classes.form}
             noValidate
-            onSubmit={e => {
-              e.preventDefault();
-              console.log(employee, period, hours);
-              resetInitialState();
-            }}
+            onSubmit={e => handleSubmit(e)}
           >
+            {error && <p className="error">{error}</p>}
+            {success && (
+              <p className="success">
+                Thank you {employee}! info submitted successfully{" "}
+              </p>
+            )}
             <TextField
               fullWidth
               variant="outlined"
@@ -136,7 +170,10 @@ export default function EmployeeForm() {
               className={classes.submit}
               children="Submit"
               endIcon={<TelegramIcon />}
-            />
+              disabled={isLoading}
+            >
+              {isLoading ? "Sending info..." : "Submit"}
+            </Button>
           </form>
         </Container>
       </div>
