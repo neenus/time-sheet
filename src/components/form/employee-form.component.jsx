@@ -1,8 +1,8 @@
-import { useState } from "react";
+import { useReducer } from "react";
 import ScheduleIcon from "@material-ui/icons/Schedule";
 import TelegramIcon from "@material-ui/icons/Telegram";
-import CssBaseline from "@material-ui/core/CssBaseline";
 import {
+  CssBaseline,
   MenuItem,
   Button,
   Container,
@@ -10,6 +10,61 @@ import {
   Typography,
   TextField
 } from "@material-ui/core";
+
+const timeSheetReducer = (state, action) => {
+  switch (action.type) {
+    case "submit":
+      return {
+        ...state,
+        isLoading: true,
+        error: ""
+      };
+    case "success":
+      return {
+        ...state,
+        success: true,
+        isLoading: false,
+        employee: "",
+        period: "",
+        hours: ""
+      };
+    case "error":
+      return {
+        ...state,
+        error: "Error in fetch request",
+        isLoading: false,
+        employee: "",
+        period: "",
+        hours: ""
+      };
+    case "serverError":
+      return {
+        ...state,
+        error: "An unknown server error occured",
+        isLoading: false,
+        employee: "",
+        period: "",
+        hours: ""
+      };
+    case "formUpdate":
+      return {
+        ...state,
+        [action.field]: action.value
+      };
+    default:
+      break;
+  }
+  return state;
+};
+
+const initialState = {
+  employee: "",
+  period: "",
+  hours: "",
+  isLoading: false,
+  error: "",
+  success: false
+};
 
 const useStyles = makeStyles(theme => ({
   paper: {
@@ -44,41 +99,14 @@ const useStyles = makeStyles(theme => ({
 
 export default function EmployeeForm() {
   const classes = useStyles();
-  const [period, setPeriod] = useState("");
-  const [hours, setHours] = useState("");
-  const [employee, setEmployee] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState("");
-  const [success, setSuccess] = useState(false);
+  const [state, dispatch] = useReducer(timeSheetReducer, initialState);
 
-  const resetInitialState = () => {
-    setEmployee("");
-    setPeriod("");
-    setHours("");
-  };
-
-  const handleChange = event => {
-    const { value, name } = event.target;
-
-    switch (name) {
-      case "period":
-        setPeriod(value);
-        break;
-      case "hours":
-        setHours(value);
-        break;
-      case "employee":
-        setEmployee(value);
-        break;
-      default:
-        break;
-    }
-  };
+  const { employee, period, hours, isLoading, error, success } = state;
 
   const handleSubmit = async e => {
     e.preventDefault();
-    setIsLoading(true);
-    setError("");
+
+    dispatch({ type: "submit" });
 
     const endpoit =
       "https://enoccmh976.execute-api.ca-central-1.amazonaws.com/default/hhpm";
@@ -95,13 +123,11 @@ export default function EmployeeForm() {
 
     try {
       const response = await fetch(endpoit, requestOptions);
-      if (!response.ok) throw new Error("Error in fetch request");
-      setSuccess(true);
+      if (!response.ok) dispatch({ type: "error" });
+      dispatch({ type: "success" });
     } catch (error) {
-      setError("An unknown error occured");
+      dispatch({ type: "serverError" });
     }
-    setIsLoading(false);
-    resetInitialState();
   };
 
   return (
@@ -120,9 +146,7 @@ export default function EmployeeForm() {
           >
             {error && <p className="error">{error}</p>}
             {success && (
-              <p className="success">
-                Thank you {employee}! info submitted successfully{" "}
-              </p>
+              <p className="success">Thank you! info submitted successfully.</p>
             )}
             <TextField
               fullWidth
@@ -131,7 +155,13 @@ export default function EmployeeForm() {
               name="employee"
               select
               label="Employee Name"
-              onChange={handleChange}
+              onChange={e =>
+                dispatch({
+                  type: "formUpdate",
+                  field: "employee",
+                  value: e.target.value
+                })
+              }
               value={employee}
             >
               <MenuItem value={"Salam Al-Jajika"}>Salam Al-jajika</MenuItem>
@@ -145,7 +175,13 @@ export default function EmployeeForm() {
               select
               inputProps={{ autoComplete: "none" }}
               required
-              onChange={handleChange}
+              onChange={e =>
+                dispatch({
+                  type: "formUpdate",
+                  field: "period",
+                  value: e.target.value
+                })
+              }
               value={period}
             >
               <MenuItem value="1">Jun 19, 2021 to Jul 2, 2021</MenuItem>
@@ -159,7 +195,13 @@ export default function EmployeeForm() {
               label="Hours"
               type="number"
               autoComplete="off"
-              onChange={handleChange}
+              onChange={e =>
+                dispatch({
+                  type: "formUpdate",
+                  field: "hours",
+                  value: e.target.value
+                })
+              }
               value={hours}
             />
             <Button
