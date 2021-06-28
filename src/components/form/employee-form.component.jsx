@@ -31,7 +31,8 @@ const timeSheetReducer = (state, action) => {
     case "error":
       return {
         ...state,
-        error: "Error in fetch request",
+        error:
+          "Sorry... Something went wrong while trying to send the information.",
         isLoading: false,
         employee: "",
         period: "",
@@ -52,7 +53,6 @@ const timeSheetReducer = (state, action) => {
         [action.field]: action.value
       };
     case "validationErrors":
-      console.log("validation...");
       return {
         ...state,
         validationErrors: {
@@ -62,7 +62,21 @@ const timeSheetReducer = (state, action) => {
         validationErrorMessages: {
           ...state.validationErrorMessages,
           [action.field]: action.errorMessage
-        }
+        },
+        isLoading: false
+      };
+    case "resetValidationErrors":
+      return {
+        ...state,
+        validationErrors: {
+          ...state.validationErrors,
+          [action.field]: false
+        },
+        validationErrorMessages: {
+          ...state.validationErrorMessages,
+          [action.field]: action.errorMessage
+        },
+        isLoading: false
       };
     default:
       break;
@@ -133,7 +147,16 @@ export default function EmployeeForm() {
           errorMessage: `${payload} field is required.`,
           field: payload
         })
-      : "";
+      : dispatch({
+          type: "resetValidationErrors",
+          errorMessage: "",
+          field: payload
+        });
+
+  const validate = () => {
+    const inputFields = { employee, period, hours };
+    return Object.values(inputFields).every(x => x !== "");
+  };
 
   const handleSubmit = async e => {
     e.preventDefault();
@@ -154,12 +177,26 @@ export default function EmployeeForm() {
       body
     };
 
-    try {
-      const response = await fetch(endpoit, requestOptions);
-      if (!response.ok) dispatch({ type: "error" });
-      dispatch({ type: "success" });
-    } catch (error) {
-      dispatch({ type: "serverError" });
+    if (validate()) {
+      try {
+        const response = await fetch(endpoit, requestOptions);
+        if (!response.ok) return dispatch({ type: "error" });
+        dispatch({ type: "success" });
+      } catch (error) {
+        dispatch({ type: "serverError" });
+      }
+    } else {
+      const inputFields = { employee, period, hours };
+
+      for (const field in inputFields) {
+        if (inputFields[field] === "") {
+          dispatch({
+            type: "validationErrors",
+            errorMessage: `${field} field is required.`,
+            field: field
+          });
+        }
+      }
     }
   };
 
@@ -177,9 +214,10 @@ export default function EmployeeForm() {
             noValidate
             onSubmit={e => handleSubmit(e)}
           >
+            {/* TODO: add styling of error and success messages show to client --> */}
             {error && <p className="error">{error}</p>}
             {success && (
-              <p className="success">Thank you! info submitted successfully.</p>
+              <p className="success">Thank you, info submitted successfully!</p>
             )}
             <TextField
               onBlur={e => handleOnBlur(e.target.name)}
@@ -200,6 +238,7 @@ export default function EmployeeForm() {
               }
               value={employee}
             >
+              {/* TODO: remove hardcoded employee dummy data and fetch actual data from DB */}
               <MenuItem value={"Salam Al-Jajika"}>Salam Al-jajika</MenuItem>
               <MenuItem value={"Fouad A Shamoon"}>Fouad A Shamoon</MenuItem>
             </TextField>
@@ -223,6 +262,7 @@ export default function EmployeeForm() {
               }
               value={period}
             >
+              {/* TODO: remove hardcoded payperiods dummy data and fetch actual data from DB */}
               <MenuItem value="1">Jun 19, 2021 to Jul 2, 2021</MenuItem>
               <MenuItem value="2">Jul 3, 2021 to Jul 16, 2021</MenuItem>
             </TextField>
