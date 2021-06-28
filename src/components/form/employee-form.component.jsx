@@ -51,6 +51,19 @@ const timeSheetReducer = (state, action) => {
         ...state,
         [action.field]: action.value
       };
+    case "validationErrors":
+      console.log("validation...");
+      return {
+        ...state,
+        validationErrors: {
+          ...state.validationErrors,
+          [action.field]: true
+        },
+        validationErrorMessages: {
+          ...state.validationErrorMessages,
+          [action.field]: action.errorMessage
+        }
+      };
     default:
       break;
   }
@@ -63,7 +76,17 @@ const initialState = {
   hours: "",
   isLoading: false,
   error: "",
-  success: false
+  success: false,
+  validationErrors: {
+    employee: false,
+    period: false,
+    hours: false
+  },
+  validationErrorMessages: {
+    employee: "",
+    period: "",
+    hours: ""
+  }
 };
 
 const useStyles = makeStyles(theme => ({
@@ -103,6 +126,15 @@ export default function EmployeeForm() {
 
   const { employee, period, hours, isLoading, error, success } = state;
 
+  const handleOnBlur = payload =>
+    !state[payload]
+      ? dispatch({
+          type: "validationErrors",
+          errorMessage: `${payload} field is required.`,
+          field: payload
+        })
+      : "";
+
   const handleSubmit = async e => {
     e.preventDefault();
 
@@ -110,6 +142,7 @@ export default function EmployeeForm() {
 
     const endpoit =
       "https://enoccmh976.execute-api.ca-central-1.amazonaws.com/default/hhpm";
+
     const body = JSON.stringify({
       employee,
       period,
@@ -149,6 +182,9 @@ export default function EmployeeForm() {
               <p className="success">Thank you! info submitted successfully.</p>
             )}
             <TextField
+              onBlur={e => handleOnBlur(e.target.name)}
+              error={state.validationErrors.employee}
+              helperText={state.validationErrorMessages.employee}
               fullWidth
               variant="outlined"
               required
@@ -168,6 +204,9 @@ export default function EmployeeForm() {
               <MenuItem value={"Fouad A Shamoon"}>Fouad A Shamoon</MenuItem>
             </TextField>
             <TextField
+              onBlur={e => handleOnBlur(e.target.name)}
+              error={state.validationErrors.period}
+              helperText={state.validationErrorMessages.period}
               fullWidth
               variant="outlined"
               label="Pay Period"
@@ -188,6 +227,9 @@ export default function EmployeeForm() {
               <MenuItem value="2">Jul 3, 2021 to Jul 16, 2021</MenuItem>
             </TextField>
             <TextField
+              onBlur={e => handleOnBlur(e.target.name)}
+              error={state.validationErrors.hours}
+              helperText={state.validationErrorMessages.hours}
               fullWidth
               variant="outlined"
               required
