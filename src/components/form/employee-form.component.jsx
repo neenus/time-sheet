@@ -1,6 +1,7 @@
 import { useReducer, useEffect } from "react";
 import ScheduleIcon from "@material-ui/icons/Schedule";
 import TelegramIcon from "@material-ui/icons/Telegram";
+import MuiAlert from "@material-ui/lab/Alert";
 import {
   CssBaseline,
   MenuItem,
@@ -8,7 +9,8 @@ import {
   Container,
   makeStyles,
   Typography,
-  TextField
+  TextField,
+  Snackbar
 } from "@material-ui/core";
 import apiCall from "../../api/apiUtils";
 
@@ -37,16 +39,25 @@ const timeSheetReducer = (state, action) => {
         isLoading: false,
         selectedEmployee: "",
         period: "",
-        hours: ""
+        hours: "",
+        snackbar: {
+          open: true,
+          severity: action.type,
+          message: "Thank you, info submitted successfully!"
+        }
       };
     case "error":
       return {
         ...state,
-        error: action.errorMessage,
         isLoading: false,
         selectedEmployee: "",
         period: "",
-        hours: ""
+        hours: "",
+        snackbar: {
+          open: true,
+          severity: action.type,
+          message: action.errorMessage
+        }
       };
     case "serverError":
       return {
@@ -88,6 +99,14 @@ const timeSheetReducer = (state, action) => {
         },
         isLoading: false
       };
+    case "snackbarClose":
+      return {
+        ...state,
+        snackbar: {
+          ...state.snackbar,
+          open: false
+        }
+      };
     default:
       break;
   }
@@ -101,8 +120,6 @@ const initialState = {
   period: "",
   hours: "",
   isLoading: false,
-  error: "",
-  success: false,
   validationErrors: {
     selectedEmployee: false,
     period: false,
@@ -112,6 +129,11 @@ const initialState = {
     selectedEmployee: "",
     period: "",
     hours: ""
+  },
+  snackbar: {
+    open: false,
+    message: "",
+    severity: "success"
   }
 };
 
@@ -146,6 +168,10 @@ const useStyles = makeStyles(theme => ({
   }
 }));
 
+function Alert(props) {
+  return <MuiAlert elevation={6} variant="filled" {...props} />;
+}
+
 const EmployeeForm = () => {
   useEffect(() => {
     const getEmployees = async () => {
@@ -159,14 +185,14 @@ const EmployeeForm = () => {
           : dispatch({
               type: "error",
               errorMessage:
-                "Something went wrong fetching employee list please try again later..."
+                "Something went wrong loading information from the server, please try again later..."
             });
       } catch (error) {
         console.error(error);
         dispatch({
           type: "error",
           errorMessage:
-            "Something went wrong fetching employee list please try again later..."
+            "Something went wrong loading information from the server, please try again later..."
         });
       }
     };
@@ -192,14 +218,14 @@ const EmployeeForm = () => {
           : dispatch({
               type: "error",
               errorMessage:
-                "Something went wrong fetching pay periods list please try again later..."
+                "Something went wrong loading information from the server, please try again later..."
             });
       } catch (error) {
         console.error(error);
         dispatch({
           type: "error",
           errorMessage:
-            "Something went wrong fetching pay periods list please try again later..."
+            "Something went wrong loading information from the server, please try again later..."
         });
       }
     };
@@ -211,12 +237,15 @@ const EmployeeForm = () => {
   const classes = useStyles();
   const [state, dispatch] = useReducer(timeSheetReducer, initialState);
 
-  const { selectedEmployee, period, hours, isLoading, error, success } = state;
+  const { selectedEmployee, period, hours, isLoading } = state;
   const handleOnBlur = payload =>
     !state[payload]
       ? dispatch({
           type: "validationErrors",
-          errorMessage: `${payload} field is required.`,
+          errorMessage:
+            payload === "selectedEmployee"
+              ? "Employee field is required"
+              : `${payload} field is required.`,
           field: payload
         })
       : dispatch({
@@ -228,6 +257,12 @@ const EmployeeForm = () => {
   const validate = () => {
     const inputFields = { selectedEmployee, period, hours };
     return Object.values(inputFields).every(x => x !== "");
+  };
+
+  const handleSnackbarClose = () => {
+    dispatch({
+      type: "snackbarClose"
+    });
   };
 
   const handleSubmit = async e => {
@@ -291,11 +326,18 @@ const EmployeeForm = () => {
             noValidate
             onSubmit={e => handleSubmit(e)}
           >
-            {/* TODO: add styling of error and success messages show to client --> */}
-            {error && <p className="error">{error}</p>}
-            {success && (
-              <p className="success">Thank you, info submitted successfully!</p>
-            )}
+            <Snackbar
+              open={state.snackbar.open}
+              autoHideDuration={8000}
+              onClose={handleSnackbarClose}
+            >
+              <Alert
+                onClose={handleSnackbarClose}
+                severity={state.snackbar.severity}
+              >
+                {state.snackbar.message}
+              </Alert>
+            </Snackbar>
             <TextField
               onBlur={e => handleOnBlur(e.target.name)}
               error={state.validationErrors.selectedEmployee}
@@ -315,7 +357,6 @@ const EmployeeForm = () => {
               }
               value={selectedEmployee}
             >
-              {/* TODO: remove hardcoded employee dummy data and fetch actual data from DB */}
               {state.employees.map(employee => (
                 <MenuItem key={employee.id} value={employee.name}>
                   {employee.name}
@@ -342,7 +383,6 @@ const EmployeeForm = () => {
               }
               value={period}
             >
-              {/* TODO: remove hardcoded payperiods dummy data and fetch actual data from DB */}
               {state.payperiods.map(period => (
                 <MenuItem key={period.periodNum} value={period.periodNum}>
                   {new Date(period.periodStart).toDateString()} to{" "}
