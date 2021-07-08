@@ -1,4 +1,4 @@
-import { useReducer } from "react";
+import { useReducer, useEffect } from "react";
 import ScheduleIcon from "@material-ui/icons/Schedule";
 import TelegramIcon from "@material-ui/icons/Telegram";
 import {
@@ -10,9 +10,20 @@ import {
   Typography,
   TextField
 } from "@material-ui/core";
+import apiCall from "../../api/apiUtils";
 
 const timeSheetReducer = (state, action) => {
   switch (action.type) {
+    case "setEmployeesList":
+      return {
+        ...state,
+        employees: action.payload
+      };
+    case "setpayPeriodList":
+      return {
+        ...state,
+        payperiods: action.payload
+      };
     case "submit":
       return {
         ...state,
@@ -24,17 +35,16 @@ const timeSheetReducer = (state, action) => {
         ...state,
         success: true,
         isLoading: false,
-        employee: "",
+        selectedEmployee: "",
         period: "",
         hours: ""
       };
     case "error":
       return {
         ...state,
-        error:
-          "Sorry... Something went wrong while trying to send the information.",
+        error: action.errorMessage,
         isLoading: false,
-        employee: "",
+        selectedEmployee: "",
         period: "",
         hours: ""
       };
@@ -43,7 +53,7 @@ const timeSheetReducer = (state, action) => {
         ...state,
         error: "An unknown server error occured",
         isLoading: false,
-        employee: "",
+        selectedEmployee: "",
         period: "",
         hours: ""
       };
@@ -85,19 +95,21 @@ const timeSheetReducer = (state, action) => {
 };
 
 const initialState = {
-  employee: "",
+  employees: [],
+  payperiods: [],
+  selectedEmployee: "",
   period: "",
   hours: "",
   isLoading: false,
   error: "",
   success: false,
   validationErrors: {
-    employee: false,
+    selectedEmployee: false,
     period: false,
     hours: false
   },
   validationErrorMessages: {
-    employee: "",
+    selectedEmployee: "",
     period: "",
     hours: ""
   }
@@ -134,12 +146,72 @@ const useStyles = makeStyles(theme => ({
   }
 }));
 
-export default function EmployeeForm() {
+const EmployeeForm = () => {
+  useEffect(() => {
+    const getEmployees = async () => {
+      try {
+        const employeeList = await apiCall("employees");
+        employeeList.data.length > 0
+          ? dispatch({
+              type: "setEmployeesList",
+              payload: employeeList.data
+            })
+          : dispatch({
+              type: "error",
+              errorMessage:
+                "Something went wrong fetching employee list please try again later..."
+            });
+      } catch (error) {
+        console.error(error);
+        dispatch({
+          type: "error",
+          errorMessage:
+            "Something went wrong fetching employee list please try again later..."
+        });
+      }
+    };
+
+    const getPayPeriods = async () => {
+      try {
+        const { data } = await apiCall("payperiods");
+
+        const payPeriodList = data.filter(
+          // payperiods are bi-weekly
+          // 604800000 is 7 days in milliseconds
+          // filter payperiods and only show three past payperiods
+
+          period =>
+            new Date(period.periodEnd) > Date.now() - 604800000 * 6 &&
+            new Date(period.periodEnd) < Date.now() + 604800000
+        );
+        payPeriodList.length > 0
+          ? dispatch({
+              type: "setpayPeriodList",
+              payload: payPeriodList
+            })
+          : dispatch({
+              type: "error",
+              errorMessage:
+                "Something went wrong fetching pay periods list please try again later..."
+            });
+      } catch (error) {
+        console.error(error);
+        dispatch({
+          type: "error",
+          errorMessage:
+            "Something went wrong fetching pay periods list please try again later..."
+        });
+      }
+    };
+
+    getEmployees();
+    getPayPeriods();
+  }, []);
+
   const classes = useStyles();
   const [state, dispatch] = useReducer(timeSheetReducer, initialState);
 
-  const { employee, period, hours, isLoading, error, success } = state;
-
+  const { selectedEmployee, period, hours, isLoading, error, success } = state;
   const handleOnBlur = payload =>
     !state[payload]
       ? dispatch({
@@ -154,7 +226,7 @@ export default function EmployeeForm() {
         });
 
   const validate = () => {
-    const inputFields = { employee, period, hours };
+    const inputFields = { selectedEmployee, period, hours };
     return Object.values(inputFields).every(x => x !== "");
   };
 
@@ -167,7 +239,7 @@ export default function EmployeeForm() {
       "https://enoccmh976.execute-api.ca-central-1.amazonaws.com/default/hhpm";
 
     const body = JSON.stringify({
-      employee,
+      selectedEmployee,
       period,
       hours
     });
@@ -180,13 +252,18 @@ export default function EmployeeForm() {
     if (validate()) {
       try {
         const response = await fetch(endpoit, requestOptions);
-        if (!response.ok) return dispatch({ type: "error" });
+        if (!response.ok)
+          return dispatch({
+            type: "error",
+            errorMessage:
+              "Sorry... Something went wrong while trying to send the information."
+          });
         dispatch({ type: "success" });
       } catch (error) {
         dispatch({ type: "serverError" });
       }
     } else {
-      const inputFields = { employee, period, hours };
+      const inputFields = { selectedEmployee, period, hours };
 
       for (const field in inputFields) {
         if (inputFields[field] === "") {
@@ -221,26 +298,29 @@ export default function EmployeeForm() {
             )}
             <TextField
               onBlur={e => handleOnBlur(e.target.name)}
-              error={state.validationErrors.employee}
-              helperText={state.validationErrorMessages.employee}
+              error={state.validationErrors.selectedEmployee}
+              helperText={state.validationErrorMessages.selectedEmployee}
               fullWidth
               variant="outlined"
               required
-              name="employee"
+              name="selectedEmployee"
               select
               label="Employee Name"
               onChange={e =>
                 dispatch({
                   type: "formUpdate",
-                  field: "employee",
+                  field: "selectedEmployee",
                   value: e.target.value
                 })
               }
-              value={employee}
+              value={selectedEmployee}
             >
               {/* TODO: remove hardcoded employee dummy data and fetch actual data from DB */}
-              <MenuItem value={"Salam Al-Jajika"}>Salam Al-jajika</MenuItem>
-              <MenuItem value={"Fouad A Shamoon"}>Fouad A Shamoon</MenuItem>
+              {state.employees.map(employee => (
+                <MenuItem key={employee.id} value={employee.name}>
+                  {employee.name}
+                </MenuItem>
+              ))}
             </TextField>
             <TextField
               onBlur={e => handleOnBlur(e.target.name)}
@@ -263,8 +343,12 @@ export default function EmployeeForm() {
               value={period}
             >
               {/* TODO: remove hardcoded payperiods dummy data and fetch actual data from DB */}
-              <MenuItem value="1">Jun 19, 2021 to Jul 2, 2021</MenuItem>
-              <MenuItem value="2">Jul 3, 2021 to Jul 16, 2021</MenuItem>
+              {state.payperiods.map(period => (
+                <MenuItem key={period.periodNum} value={period.periodNum}>
+                  {new Date(period.periodStart).toDateString()} to{" "}
+                  {new Date(period.periodEnd).toDateString()}
+                </MenuItem>
+              ))}
             </TextField>
             <TextField
               onBlur={e => handleOnBlur(e.target.name)}
@@ -303,4 +387,6 @@ export default function EmployeeForm() {
       </div>
     </Container>
   );
-}
+};
+
+export default EmployeeForm;
