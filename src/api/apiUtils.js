@@ -1,8 +1,6 @@
 import axios from "axios";
 
-// TODO: update baseApiUrl to server api endpoit instead of mock server
-
-const baseApiUrl = "http://localhost:3000";
+const baseApiUrl = process.env.REACT_APP_BASEURL;
 
 const apiCall = async route => {
   const data = await axios.get(`${baseApiUrl}/${route}`);
