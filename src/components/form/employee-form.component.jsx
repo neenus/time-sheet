@@ -244,7 +244,7 @@ const EmployeeForm = () => {
           type: "validationErrors",
           errorMessage:
             payload === "selectedEmployee"
-              ? "Employee field is required"
+              ? "employee field is required"
               : `${payload} field is required.`,
           field: payload
         })
@@ -358,7 +358,7 @@ const EmployeeForm = () => {
               value={selectedEmployee}
             >
               {state.employees.map(employee => (
-                <MenuItem key={employee.id} value={employee.name}>
+                <MenuItem key={employee._id} value={employee.name}>
                   {employee.name}
                 </MenuItem>
               ))}
