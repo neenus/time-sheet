@@ -13,6 +13,7 @@ import {
   Snackbar
 } from "@material-ui/core";
 import apiCall from "../../api/apiUtils";
+import { formatDate } from "../../utils/time";
 
 const timeSheetReducer = (state, action) => {
   switch (action.type) {
@@ -384,9 +385,14 @@ const EmployeeForm = () => {
               value={period}
             >
               {state.payperiods.map(period => (
-                <MenuItem key={period.periodNum} value={period.periodNum}>
-                  {new Date(period.periodStart).toDateString()} to{" "}
-                  {new Date(period.periodEnd).toDateString()}
+                <MenuItem
+                  key={period.periodNum}
+                  value={`${formatDate(period.periodStart)} to  ${formatDate(
+                    period.periodEnd
+                  )}`}
+                >
+                  {formatDate(period.periodStart)} to{" "}
+                  {formatDate(period.periodEnd)}
                 </MenuItem>
               ))}
             </TextField>
