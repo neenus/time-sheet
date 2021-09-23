@@ -1,4 +1,4 @@
-import { useReducer, useEffect } from "react";
+import { useReducer, useEffect, useRef } from "react";
 import ScheduleIcon from "@material-ui/icons/Schedule";
 import TelegramIcon from "@material-ui/icons/Telegram";
 import MuiAlert from "@material-ui/lab/Alert";
@@ -14,6 +14,7 @@ import {
 } from "@material-ui/core";
 import apiCall from "../../api/apiUtils";
 import { formatDate } from "../../utils/time";
+import ReCAPTCHA from "react-google-recaptcha";
 
 const timeSheetReducer = (state, action) => {
   switch (action.type) {
@@ -174,6 +175,8 @@ function Alert(props) {
 }
 
 const EmployeeForm = () => {
+  const recaptchaRef = useRef();
+
   useEffect(() => {
     const getEmployees = async () => {
       try {
@@ -269,6 +272,9 @@ const EmployeeForm = () => {
   const handleSubmit = async e => {
     e.preventDefault();
 
+    const token = await recaptchaRef.current.executeAsync();
+    recaptchaRef.current.reset();
+
     dispatch({ type: "submit" });
 
     const endpoit =
@@ -277,7 +283,8 @@ const EmployeeForm = () => {
     const body = JSON.stringify({
       selectedEmployee,
       period,
-      hours
+      hours,
+      token
     });
 
     const requestOptions = {
@@ -431,6 +438,11 @@ const EmployeeForm = () => {
           </form>
         </Container>
       </div>
+      <ReCAPTCHA
+        ref={recaptchaRef}
+        size="invisible"
+        sitekey={process.env.REACT_APP_SITE_KEY}
+      />
     </Container>
   );
 };
